@@ -42,7 +42,7 @@ class StorageError(RuntimeError):
     """Raised when a database operation fails."""
 
 
-    def init_db() -> None:
+def init_db() -> None:
     try:
         SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
         Base.metadata.create_all(bind=engine)
@@ -52,3 +52,52 @@ class StorageError(RuntimeError):
         ) from exc
     except SQLAlchemyError as exc:
         raise StorageError(f"Cannot initialize database at {SQLITE_PATH}: {exc}") from exc
+
+def get_session() -> Session:
+    return SessionLocal()
+
+def save_detection(count: int, avg_confidence: float) -> DetectionRecord:
+    record = DetectionRecord(
+        timestamp=datetime.now(timezone.utc),
+        count=count,
+        avg_confidence=avg_confidence,
+    )
+    try:
+        with get_session() as session:
+            session.add(record)
+            session.commit()
+            session.refresh(record)
+            session.expunge(record)
+        return record
+    except SQLAlchemyError as exc:
+        raise StorageError(f"Failed to save detection record: {exc}") from exc
+
+def list_detections(
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    min_confidence: float | None = None,
+) -> list[dict[str, Any]]:
+    stmt = select(DetectionRecord).order_by(DetectionRecord.timestamp.desc())
+
+    if start is not None:
+        stmt = stmt.where(DetectionRecord.timestamp >= start)
+    if end is not None:
+        stmt = stmt.where(DetectionRecord.timestamp <= end)
+    if min_confidence is not None:
+        stmt = stmt.where(DetectionRecord.avg_confidence >= min_confidence)
+
+    try:
+        with get_session() as session:
+            rows = session.scalars(stmt).all()
+            return [
+                {
+                    "id": row.id,
+                    "timestamp": row.timestamp.isoformat(),
+                    "count": row.count,
+                    "avg_confidence": round(float(row.avg_confidence), 4),
+                }
+                for row in rows
+            ]
+    except SQLAlchemyError as exc:
+        raise StorageError(f"Failed to read detection history: {exc}") from exc
