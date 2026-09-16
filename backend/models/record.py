@@ -101,3 +101,12 @@ def list_detections(
             ]
     except SQLAlchemyError as exc:
         raise StorageError(f"Failed to read detection history: {exc}") from exc
+
+def clear_detections() -> int:
+    try:
+        with get_session() as session:
+            result = session.execute(delete(DetectionRecord))
+            session.commit()
+            return int(result.rowcount or 0)
+    except SQLAlchemyError as exc:
+        raise StorageError(f"Failed to clear detection history: {exc}") from exc
