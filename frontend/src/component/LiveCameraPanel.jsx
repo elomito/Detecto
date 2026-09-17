@@ -83,3 +83,15 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
       stopCamera()
     }
   }, [active, stopCamera])
+
+  function syncOverlaySize() {
+    const video = videoRef.current
+    const overlay = overlayRef.current
+    if (!video || !overlay) return
+    const w = video.clientWidth
+    const h = video.clientHeight
+    if (w > 0 && h > 0 && (overlay.width !== w || overlay.height !== h)) {
+      overlay.width = w
+      overlay.height = h
+    }
+  }
