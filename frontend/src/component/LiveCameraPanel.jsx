@@ -106,7 +106,7 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
     setFps(times.length)
   }
 
-   function captureAndSend() {
+  function captureAndSend() {
     const video = videoRef.current
     const capture = captureRef.current
     const ws = wsRef.current
@@ -180,5 +180,148 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
       ws.send(JSON.stringify({ frame: base64 }))
     } catch {
       sendFailed()
+    }
+  }
+
+  function handleResult(payload) {
+    inFlightRef.current = false
+    if (payload?.error) {
+      setError(String(payload.error))
+      return
+    }
+    const detections = Array.isArray(payload.detections) ? payload.detections : []
+    const nextCount = typeof payload.count === 'number' ? payload.count : detections.length
+    setCount(nextCount)
+    if (typeof payload.inference_time_ms === 'number') {
+      setInferenceMs(payload.inference_time_ms)
+    }
+    recordResultFps()
+
+    const video = videoRef.current
+    const overlay = overlayRef.current
+    if (video && overlay) {
+      syncOverlaySize()
+      const ctx = overlay.getContext('2d')
+      if (ctx) {
+        drawDetectionBoxes(
+          ctx,
+          overlay,
+          detections,
+          video.videoWidth,
+          video.videoHeight,
+        )
+      }
+    }
+
+    if (payload.persisted && typeof onPersisted === 'function') {
+      onPersisted()
+    }
+  }
+
+  async function startCamera() {
+    setError(null)
+    setCount(0)
+    setInferenceMs(null)
+    setFps(0)
+    frameTimesRef.current = []
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        'Camera access is not available in this browser. Use HTTPS or localhost, or try another browser.',
+      )
+      return
+    }
+
+    setStatus('requesting')
+    let stream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false,
+      })
+    } catch (err) {
+      const name = err && typeof err === 'object' ? err.name : ''
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setError(
+          'Camera permission denied. Allow camera access for this site, then try Start again.',
+        )
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        setError('No camera was found. Connect a webcam and try again.')
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        setError('Camera is already in use by another application. Close it and try again.')
+      } else {
+        const reason = err instanceof Error ? err.message : 'unknown error'
+        setError(`Could not open the camera (${reason}).`)
+      }
+      setStatus('idle')
+      return
+    }
+
+    streamRef.current = stream
+    const video = videoRef.current
+    if (!video) {
+      for (const track of stream.getTracks()) track.stop()
+      streamRef.current = null
+      setError('Video element is not ready. Refresh and try again.')
+      setStatus('idle')
+      return
+    }
+
+    video.srcObject = stream
+    try {
+      await video.play()
+    } catch (err) {
+      stopCamera()
+      const reason = err instanceof Error ? err.message : 'playback failed'
+      setError(`Camera stream could not start (${reason}).`)
+      return
+    }
+
+    setStatus('connecting')
+    let ws
+    try {
+      ws = new WebSocket(WS_DETECT_URL)
+    } catch (err) {
+      stopCamera()
+      const reason = err instanceof Error ? err.message : 'invalid WebSocket URL'
+      setError(`Could not open live detection socket (${reason}). Check VITE_WS_URL.`)
+      return
+    }
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      if (!runningRef.current && wsRef.current !== ws) return
+      setStatus('live')
+      setRunning(true)
+      runningRef.current = true
+      const intervalMs = Math.max(50, Math.round(1000 / LIVE_FPS))
+      intervalRef.current = window.setInterval(() => {
+        if (!runningRef.current) return
+        syncOverlaySize()
+        captureAndSend()
+      }, intervalMs)
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        handleResult(payload)
+      } catch {
+        setError('Received an invalid detection message from the server.')
+      }
+    }
+
+    ws.onerror = () => {
+      setError(
+        `Live detection connection failed (${WS_DETECT_URL}). Check that the backend is running and VITE_WS_URL is correct.`,
+      )
+      stopCamera()
+    }
+
+    ws.onclose = () => {
+      if (runningRef.current) {
+        stopCamera()
+        setError('Live detection connection closed. Press Start to reconnect.')
+      }
     }
   }
