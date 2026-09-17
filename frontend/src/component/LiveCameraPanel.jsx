@@ -325,3 +325,79 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
       }
     }
   }
+
+  function handleToggle() {
+    if (running) {
+      stopCamera()
+      return
+    }
+    startCamera()
+  }
+
+  return (
+    <section className="live-camera" aria-labelledby="live-camera-title">
+      <div className="live-camera__header">
+        <h2 id="live-camera-title">Live camera</h2>
+        <p>
+          Streams webcam frames at {LIVE_FPS} fps to the detector. Bounding boxes reuse the same
+          layout as upload mode.
+        </p>
+      </div>
+
+      <div className="live-camera__stage">
+        <video
+          ref={videoRef}
+          className="live-camera__video"
+          playsInline
+          muted
+          autoPlay
+        />
+        <canvas ref={overlayRef} className="live-camera__overlay" aria-hidden="true" />
+        <canvas ref={captureRef} className="live-camera__capture" aria-hidden="true" />
+        {!running ? (
+          <div className="live-camera__placeholder">
+            <p>Camera is off. Press Start to begin live detection.</p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="live-camera__metrics" aria-live="polite">
+        <div className="live-metric">
+          <span className="live-metric__label">People</span>
+          <span className="live-metric__value">{count}</span>
+        </div>
+        <div className="live-metric">
+          <span className="live-metric__label">Result FPS</span>
+          <span className="live-metric__value">{fps.toFixed(0)}</span>
+        </div>
+        <div className="live-metric">
+          <span className="live-metric__label">Inference</span>
+          <span className="live-metric__value">
+            {inferenceMs == null ? '—' : `${inferenceMs.toFixed(0)} ms`}
+          </span>
+        </div>
+        <div className="live-metric">
+          <span className="live-metric__label">Status</span>
+          <span className="live-metric__value">{status}</span>
+        </div>
+      </div>
+
+      {error ? (
+        <p className="live-camera__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="live-camera__actions">
+        <button
+          type="button"
+          className={running ? 'live-camera__stop' : 'live-camera__start'}
+          onClick={handleToggle}
+        >
+          {running ? 'Stop camera' : 'Start camera'}
+        </button>
+      </div>
+    </section>
+  )
+}
+
