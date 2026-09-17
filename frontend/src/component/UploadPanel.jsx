@@ -42,3 +42,9 @@ export default function UploadPanel({
     const next = e.dataTransfer.files?.[0] ?? null
     acceptFile(next)
   }
+  
+  function onDragOver(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled) setDragging(true)
+  }
