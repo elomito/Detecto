@@ -29,3 +29,7 @@ export default function UploadPanel({
         onFileChange(next)
     }
 
+    function onInputChange(e) {
+        const next = e.target.files?.[0] ?? null
+        acceptFile(next)
+    }
