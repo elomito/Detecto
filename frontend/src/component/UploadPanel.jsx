@@ -21,3 +21,11 @@ export default function UploadPanel({
     const inputRef = useRef(null)
     const [dragging, setDragging] = useState(false)
 
+    function acceptFile(next) {
+        if (!next) {
+            onFileChange(null)
+            return
+        }
+        onFileChange(next)
+    }
+
