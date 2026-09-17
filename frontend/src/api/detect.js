@@ -53,3 +53,60 @@ export function validateImageFile(file) {
   }
   return null
 }
+
+/**
+ * @param {unknown} payload
+ * @param {number} status
+ */
+function detailFromPayload(payload, status) {
+  if (payload && typeof payload === 'object' && 'detail' in payload) {
+    const detail = /** @type {{ detail: unknown }} */ (payload).detail
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+      return detail.map((d) => (d && d.msg) || JSON.stringify(d)).join(' ')
+    }
+  }
+  return `Detection failed (${status}).`
+}
+
+/**
+ * POST multipart image to /detect
+ * @param {File} file
+ */
+export async function detectPeople(file) {
+  const form = new FormData()
+  form.append('image', file)
+
+  let response
+  try {
+    response = await fetch(`${API_URL}/detect`, {
+      method: 'POST',
+      body: form,
+    })
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : 'network error'
+    throw new Error(
+      `Could not reach the Detecto API at ${API_URL} (${reason}). Check that the backend is running and VITE_API_URL is correct.`,
+    )
+  }
+
+  let payload = null
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok) {
+    const err = new Error(detailFromPayload(payload, response.status))
+    err.status = response.status
+    throw err
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Detecto API returned an empty or invalid JSON response.')
+  }
+
+  return payload
+}
+
