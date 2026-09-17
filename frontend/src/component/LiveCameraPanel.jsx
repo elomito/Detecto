@@ -105,3 +105,80 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
     }
     setFps(times.length)
   }
+
+   function captureAndSend() {
+    const video = videoRef.current
+    const capture = captureRef.current
+    const ws = wsRef.current
+    if (!video || !capture || !ws || ws.readyState !== WebSocket.OPEN) return
+    if (inFlightRef.current) return
+    if (video.readyState < 2 || video.videoWidth === 0) return
+
+    const maxSide = 640
+    const vw = video.videoWidth
+    const vh = video.videoHeight
+    const scale = Math.min(1, maxSide / Math.max(vw, vh))
+    const cw = Math.max(1, Math.round(vw * scale))
+    const ch = Math.max(1, Math.round(vh * scale))
+    if (capture.width !== cw || capture.height !== ch) {
+      capture.width = cw
+      capture.height = ch
+    }
+
+    const ctx = capture.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0, cw, ch)
+
+    // Prefer binary JPEG (avoids JSON.stringify dropping undefined `frame`).
+    inFlightRef.current = true
+    const sendFailed = () => {
+      inFlightRef.current = false
+    }
+
+    if (typeof capture.toBlob === 'function') {
+      capture.toBlob(
+        (blob) => {
+          if (!blob || blob.size < 32) {
+            sendFailed()
+            return
+          }
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            sendFailed()
+            return
+          }
+          blob
+            .arrayBuffer()
+            .then((buf) => {
+              try {
+                wsRef.current.send(buf)
+              } catch {
+                sendFailed()
+              }
+            })
+            .catch(sendFailed)
+        },
+        'image/jpeg',
+        0.7,
+      )
+      return
+    }
+
+    // Fallback for older browsers: JSON + base64.
+    let dataUrl
+    try {
+      dataUrl = capture.toDataURL('image/jpeg', 0.7)
+    } catch {
+      sendFailed()
+      return
+    }
+    const base64 = dataUrl.includes(',') ? dataUrl.split(',', 1)[1] : dataUrl
+    if (!base64 || base64.length < 32) {
+      sendFailed()
+      return
+    }
+    try {
+      ws.send(JSON.stringify({ frame: base64 }))
+    } catch {
+      sendFailed()
+    }
+  }
