@@ -72,3 +72,76 @@ export default function DetectionView() {
       setLoading(false)
     }
   }
+
+
+  return (
+    <div className="detection-view">
+      <header className="detection-view__hero">
+        <p className="detection-view__brand">Detecto</p>
+        <h1>Detection</h1>
+        <p className="detection-view__lede">
+          Upload a photo or use your webcam for live person detection with confidence scores and
+          timing.
+        </p>
+      </header>
+
+      <div className="detection-view__modes" role="tablist" aria-label="Detection mode">
+        <button
+          type="button"
+          role="tab"
+          id="mode-upload"
+          aria-selected={mode === 'upload'}
+          className={mode === 'upload' ? 'is-active' : undefined}
+          onClick={() => handleModeChange('upload')}
+        >
+          Upload image
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="mode-live"
+          aria-selected={mode === 'live'}
+          className={mode === 'live' ? 'is-active' : undefined}
+          onClick={() => handleModeChange('live')}
+        >
+          Live camera
+        </button>
+      </div>
+
+      {mode === 'upload' ? (
+        <div
+          className="detection-view__grid"
+          role="tabpanel"
+          aria-labelledby="mode-upload"
+        >
+          <UploadPanel
+            file={file}
+            error={error}
+            disabled={loading}
+            onFileChange={handleFileChange}
+            onSubmit={handleSubmit}
+          />
+          <DetectionResultView
+            result={result}
+            previewUrl={previewUrl}
+            loading={loading}
+          />
+        </div>
+      ) : (
+        <div
+          className="detection-view__live"
+          role="tabpanel"
+          aria-labelledby="mode-live"
+        >
+          <LiveCameraPanel
+            active={mode === 'live'}
+            onPersisted={() => setHistoryRefreshKey((key) => key + 1)}
+          />
+        </div>
+      )}
+
+      <HistoryExport refreshKey={historyRefreshKey} />
+    </div>
+  )
+}
+
