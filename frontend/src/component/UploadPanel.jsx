@@ -33,3 +33,12 @@ export default function UploadPanel({
         const next = e.target.files?.[0] ?? null
         acceptFile(next)
     }
+
+     function onDrop(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragging(false)
+    if (disabled) return
+    const next = e.dataTransfer.files?.[0] ?? null
+    acceptFile(next)
+  }
