@@ -95,3 +95,13 @@ export default function LiveCameraPanel({ active = true, onPersisted }) {
       overlay.height = h
     }
   }
+
+  function recordResultFps() {
+    const now = performance.now()
+    const times = frameTimesRef.current
+    times.push(now)
+    while (times.length > 0 && now - times[0] > 1000) {
+      times.shift()
+    }
+    setFps(times.length)
+  }
