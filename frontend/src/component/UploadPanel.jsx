@@ -1,0 +1,23 @@
+import { useId, useRef, useState } from 'react'
+import './UploadPanel.css'
+
+/**
+ * @param {{
+ *   disabled?: boolean
+ *   error?: string | null
+ *   file?: File | null
+ *   onFileChange: (file: File | null) => void
+ *   onSubmit: () => void
+ * }} props
+ */
+export default function UploadPanel({
+    disabled = false,
+    error = null,
+    file = null,
+    onFileChange,
+    onSubmit,
+}) {
+    const inputId = useId()
+    const inputRef = useRef(null)
+    const [dragging, setDragging] = useState(false)
+
