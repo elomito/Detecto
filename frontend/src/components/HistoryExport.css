@@ -1,29 +1,31 @@
 .history-export {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.9rem;
   margin-top: 1.5rem;
-  padding: 1.25rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid var(--line);
+  padding: 1.35rem clamp(1.25rem, 2.5vw, 1.65rem);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(20, 32, 28, 0.1);
+  box-shadow: var(--shadow-sm);
   backdrop-filter: blur(8px);
   text-align: left;
 }
 
 .history-export__header h2 {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.35rem;
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--ink);
 }
 
 .history-export__header p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .history-export__meta {
@@ -32,56 +34,37 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  padding-top: 0.15rem;
 }
 
 .history-export__count {
   font-family: var(--font-mono);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   color: var(--muted);
 }
 
 .history-export__button {
+  min-height: 2.6rem;
   font: inherit;
   font-weight: 600;
-  border: none;
-  border-radius: 999px;
-  padding: 0.65rem 1.15rem;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  padding: 0.65rem 1.1rem;
   color: #fff;
   background: var(--accent);
   cursor: pointer;
   transition: background 160ms ease, opacity 160ms ease;
 }
 
-.history-export__button:hover:not(:disabled) {
-  background: var(--accent-strong);
-}
-
-.history-export__button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+.history-export__button:hover:not(:disabled) { background: var(--accent-strong); }
+.history-export__button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .history-export__hint,
 .history-export__success {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   line-height: 1.45;
 }
 
-.history-export__hint {
-  color: var(--muted);
-}
-
-.history-export__success {
-  color: var(--accent-strong);
-}
-
-.history-export__error {
-  margin: 0;
-  padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  background: var(--danger-soft);
-  color: var(--danger);
-  font-size: 0.92rem;
-  line-height: 1.4;
-}
+.history-export__hint { color: var(--muted); }
+.history-export__success { color: var(--accent-strong); }
