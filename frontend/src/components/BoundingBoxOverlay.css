@@ -2,11 +2,11 @@
   position: relative;
   display: inline-block;
   max-width: 100%;
-  line-height: 0;
-  border-radius: 12px;
   overflow: hidden;
+  line-height: 0;
+  border-radius: 13px;
   background: #0f1412;
-  box-shadow: 0 18px 40px rgba(20, 28, 24, 0.18);
+  box-shadow: var(--shadow-md);
 }
 
 .bbox-overlay__image {
@@ -25,13 +25,13 @@
 
 .bbox-overlay__label {
   position: absolute;
-  left: 0;
   top: 0;
-  transform: translateY(-100%);
+  left: 0;
   margin-top: -2px;
   padding: 0.15rem 0.4rem;
+  transform: translateY(-100%);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   line-height: 1.2;
   color: #06251c;
   background: #3dd6a5;
